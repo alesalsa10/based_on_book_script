@@ -2,14 +2,6 @@
 from bs4 import BeautifulSoup
 import requests
 
-#import pymongo
-# from pymongo import MongoClient
-# from dotenv import load_dotenv
-# load_dotenv()
-
-# mongoURI = os.getenv('mongoURI')
-# cluster = MongoClient(mongoURI)
-
 from mongo_connection import mongodb_conn
 
 cluster = mongodb_conn()
@@ -41,6 +33,7 @@ def format_book_info(book):
     all_info_array = name.split('/')
     return all_info_array
 
+
 def getInfo():
     for param in params:
         page = requests.get(f'https://apps.mymcpl.org/botb/movie/browse/{param}')
@@ -55,20 +48,21 @@ def getInfo():
 
             movie_name = format_media_title(movie.getText())
             release_year =  list(map(int, filter(str.isdigit, movie_name.split())))[-1]
-            movie_name = movie_name.replace(str(release_year), '')
+            movie_name = movie_name.replace(str(release_year), '').strip()
 
             book_info = movie.find_next_sibling("td")
             amazon_link = book_info.find_all('li')[-1].a.get('href')
-            book_name = format_book_info(book_info.getText())[0]
+            book_name = format_book_info(book_info.getText())[0].strip()
             book_author = format_book_info(book_info.getText())[-1].strip()
             #print(movie_name, release_year, book_name, book_author)
             #save to database and check that it does not exist first
 
-            found = collection.find_one({"movie_name": movie_name, "year": release_year, "book_autor": book_author})
-            if(not found):
+            found = collection.find_one({"movie_name": movie_name, 'release_year': release_year, 'book_author': book_author})
+            print(found)
+            if found is None:
                 book = {
                 'movie_name': movie_name,
-                'year': release_year,
+                'release_year': release_year,
                 "media_type": media_type,
                 "book_name": book_name,
                 "book_author": book_author,
