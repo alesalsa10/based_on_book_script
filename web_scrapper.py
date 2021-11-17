@@ -39,35 +39,38 @@ def getInfo():
         page = requests.get(f'https://apps.mymcpl.org/botb/movie/browse/{param}')
         soup = BeautifulSoup(page.text, 'html.parser')
         movies = soup.find_all('td', class_='views-field-title-4')
-        for movie in movies:
-            media_type = ''
-            if'series' in movie.getText():
-                media_type = 'Tv'
-            else:
-                media_type = 'Movie'
+        count_by_params = collection.count_documents({"param": param})
+        print(count_by_params, len(movies))
+        if(count_by_params != len(movies)):
+            for movie in movies:
+                media_type = ''
+                if'series' in movie.getText():
+                    media_type = 'Tv'
+                else:
+                    media_type = 'Movie'
 
-            movie_name = format_media_title(movie.getText())
-            release_year =  list(map(int, filter(str.isdigit, movie_name.split())))[-1]
-            movie_name = movie_name.replace(str(release_year), '').strip()
+                media_name = format_media_title(movie.getText())
+                release_year =  list(map(int, filter(str.isdigit, media_name.split())))[-1]
+                media_name = media_name.replace(str(release_year), '').strip()
 
-            book_info = movie.find_next_sibling("td")
-            amazon_link = book_info.find_all('li')[-1].a.get('href')
-            book_name = format_book_info(book_info.getText())[0].strip()
-            book_author = format_book_info(book_info.getText())[-1].strip()
-            #print(movie_name, release_year, book_name, book_author)
-            #save to database and check that it does not exist first
+                book_info = movie.find_next_sibling("td")
+                amazon_link = book_info.find_all('li')[-1].a.get('href')
+                book_name = format_book_info(book_info.getText())[0].strip()
+                book_author = format_book_info(book_info.getText())[-1].strip()
+                #print(movie_name, release_year, book_name, book_author)
+                #save to database and check that it does not exist first
 
-            found = collection.find_one({"movie_name": movie_name, 'release_year': release_year, 'book_author': book_author})
-            print(found)
-            if found is None:
-                book = {
-                'movie_name': movie_name,
-                'release_year': release_year,
-                "media_type": media_type,
-                "book_name": book_name,
-                "book_author": book_author,
-                "amazon_link": amazon_link
-                }
-                collection.insert_one(book)
-
+                found = collection.find_one({"media_name": media_name, 'release_year': release_year, 'book_author': book_author})
+                print(found)
+                if found is None:
+                    media = {
+                    'media_name': media_name,
+                    'release_year': release_year,
+                    "media_type": media_type,
+                    "book_name": book_name,
+                    "book_author": book_author,
+                    "amazon_link": amazon_link,
+                    "param": param
+                    }
+                    collection.insert_one(media)
 getInfo()
